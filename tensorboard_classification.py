@@ -13,7 +13,7 @@ print(mnist.train.labels.shape)  #(55000, 10)  ->X: 55000             ; Y: 0-9 o
 print(mnist.test.images.shape)   #(10000, 784)->10000 test set
 print(mnist.test.labels.shape)   #(10000, 10)
 
-#添加网络层
+#1. 定义添加网络层方法
 def add_layer(inputs,in_size,out_size,activation_fucntion=None,name='layer'):
     with tf.name_scope(name):
         with tf.name_scope('weights'):
@@ -28,7 +28,7 @@ def add_layer(inputs,in_size,out_size,activation_fucntion=None,name='layer'):
             outputs = activation_fucntion(Wx_plus_b)
         return  outputs
 
-# 计算验证集的准确率
+# 2.定义计算验证集的准确率方法
 def compute_accuracy(validate_xs,validate_ys):
     global prediction
     y_preiction = sess.run(prediction, feed_dict={xs: validate_xs})
@@ -39,10 +39,11 @@ def compute_accuracy(validate_xs,validate_ys):
     accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
     result = sess.run(accuracy, feed_dict={xs: validate_xs, ys: validate_ys})
     return result
+# 3. 定义xs，ys变量
 with tf.name_scope('inputs'):
     xs = tf.placeholder(tf.float32, [None, 784], name='input_x') # None means: 任意数字样本条数，后续单批批量数
     ys = tf.placeholder(tf.float32, [None, 10], name='input_y')  # 实际结果，用于和预测结果对比
-
+# 4. 搭建设计网络结构  input-hidden-output 标准三层结构
 with tf.variable_scope('Net'):
     # add hidden layer
     hidden1 = add_layer(xs, 784, 784*2, activation_fucntion=tf.nn.softmax,name='hidden1')
@@ -51,11 +52,14 @@ with tf.variable_scope('Net'):
     #add output layer
     prediction = add_layer(hidden1,784*2,10,activation_fucntion=tf.nn.softmax,name='output')
     tf.summary.histogram('prediction',prediction)
+# 5. 选取计算loss公式
 #cross entropy 交叉熵公式计算
 #[1]在第二维度上面求均值交叉熵
 with tf.name_scope('loss'):
     mean_cross_entropy = tf.reduce_mean(-tf.reduce_sum(ys * tf.log(prediction), reduction_indices = 1),name='loss')
     tf.summary.scalar('loss', mean_cross_entropy)     # 作用于标量，将loss添加到Tensorboard标量
+
+# 6. 选取优化器进行优化loss
 # 训练operation，利用优化器优化cost
 with tf.name_scope('train'):
     train_op = tf.train.GradientDescentOptimizer(0.5).minimize(mean_cross_entropy) # 0.5 is learning rate
@@ -68,6 +72,7 @@ merge_op = tf.summary.merge_all()
 init = tf.global_variables_initializer()
 sess.run(init)
 
+# 7. 训练1000次
 for step in range(1000):
     batch_xs, batch_ys  = mnist.train.next_batch(100)
     # 训练输出结果
